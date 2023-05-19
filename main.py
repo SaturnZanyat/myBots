@@ -1,7 +1,9 @@
 import json
 import re
 import configparser
+
 import telebot
+from telebot import types
 from telebot.types import Message
 
 # class MyBot:
@@ -12,6 +14,8 @@ from telebot.types import Message
 config = configparser.ConfigParser()
 config.read("setting.ini")
 token = config["Bot"]["bot"]
+payment_token = config["Bot"]["payment"]
+PRICE = types.LabeledPrice(label="Звезда смерти", amount=int(config["Price"]["zvezda"])*100)  # в копейках (руб)
 bot = telebot.TeleBot(token)
 
 def validate_number(number):
@@ -74,6 +78,25 @@ def send_number(message: Message):
     bot.send_message(chat_id, "Вопрос 1. Посчитайте, пожалуйста, сколько ножек у гусениц. Введите свой ответ: ")
     bot.register_next_step_handler(message, callback=handler_number)
 
+
+@bot.message_handler(commands=["buy"])
+def buy(message: Message):
+    if payment_token.split(':')[1] == 'TEST':
+        bot.send_message(message.chat.id, "Тестовый платеж!!!")
+
+    bot.send_invoice(message.chat.id,
+                           title="Покупка Звезды Смерти",
+                           description="Абсолютно новая Здезда Смерти",
+                           provider_token=payment_token,
+                           currency="rub",
+                           # photo_url="",
+                           # photo_width=416,
+                           # photo_height=234,
+                           # photo_size=416,
+                           is_flexible=False,
+                           prices=[PRICE],
+                           start_parameter="buy_zvezda",
+                           invoice_payload="test-invoice-payload")
 
 @bot.message_handler(content_types=["text"])
 def start(message: Message):
