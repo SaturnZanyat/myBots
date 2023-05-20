@@ -104,8 +104,12 @@ async def start(message: Message):
     await bot.set_state(user_id, MyStates.start, chat_id)
     await bot.send_message(chat_id, response)
 
-bot.add_custom_filter(asyncio_filters.StateFilter(bot))
-bot.add_custom_filter(asyncio_filters.IsDigitFilter())
+while True:
+    try:
+        bot.add_custom_filter(asyncio_filters.StateFilter(bot))
+        bot.add_custom_filter(asyncio_filters.IsDigitFilter())
 
-asyncio.run(bot.polling(non_stop=True, interval=0))
-close_connection_DB(connection)
+        asyncio.run(bot.polling(non_stop=True, interval=0))
+        close_connection_DB(connection)
+    except Exception as err:
+        print("!!!!!!! Ошибка: ", err)
