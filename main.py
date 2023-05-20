@@ -9,6 +9,7 @@ from telebot.asyncio_storage import StateMemoryStorage
 from telebot.types import Message
 from telebot.asyncio_handler_backends import State, StatesGroup
 
+from DB import connect_DB, close_connection_DB
 from repositories import validate_number, check_correct_number, get_answer
 
 config = configparser.ConfigParser()
@@ -24,6 +25,7 @@ class MyStates(StatesGroup):
     bird = State()
     buy = State()
 
+connection = connect_DB()
 
 @bot.message_handler(commands=["buy"])
 async def buy(message: Message):
@@ -106,3 +108,4 @@ bot.add_custom_filter(asyncio_filters.StateFilter(bot))
 bot.add_custom_filter(asyncio_filters.IsDigitFilter())
 
 asyncio.run(bot.polling(non_stop=True, interval=0))
+close_connection_DB(connection)
