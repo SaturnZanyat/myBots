@@ -1,7 +1,9 @@
+import sys
+
 from django.contrib import admin
 from django.urls import path
-
-from ..testdb import views
+sys.path.append("..")
+from testdb import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
