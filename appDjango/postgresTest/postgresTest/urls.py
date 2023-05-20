@@ -1,11 +1,11 @@
-import sys
-
 from django.contrib import admin
-from django.urls import path
-sys.path.append("..")
-from testdb import views
+from django.urls import path, include
+
+# from appDjango.postgresTest.testdb import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('quest/', views.RandomQuest.as_view()),
+    path('api/', include('testdb.urls')),
+    # path('quest/', views.RandomQuest.as_view()),
+    # path('next/<int:pk>', views.NextQuest.as_view())
 ]
