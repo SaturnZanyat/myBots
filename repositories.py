@@ -1,6 +1,24 @@
 import json
 import re
 
+import aiohttp
+from telebot import types
+import configparser
+
+async def get_random_quest():
+    config = configparser.ConfigParser()
+    config.read("setting.ini")
+    async with aiohttp.ClientSession() as session:
+        async with session.get(config["Django"]["api_quest"]) as response:
+            return await response.json()
+
+async def add_answer_kb(a1,a2,a3):
+    a1 = types.InlineKeyboardButton(str(a1), callback_data=str(a1))
+    a2 = types.InlineKeyboardButton(str(a2), callback_data=str(a2))
+    a3 = types.InlineKeyboardButton(str(a3), callback_data=str(a3))
+    answer_kb = types.InlineKeyboardMarkup()
+    answer_kb.add(a1,a2,a3)
+    return answer_kb
 
 async def validate_number(number):
     pattern = "\D"
@@ -15,6 +33,9 @@ async def check_correct_number(answ, number):
         return True
     else:
         return False
+
+async def register_button_pick(call):
+    return call
 
 async def get_answer(request, chat_id, field: str):
     with open("clients.json", "r") as ff:

@@ -1,16 +1,13 @@
-import asyncio
 import configparser
-import json
-import re
 
 from telebot import types, asyncio_filters
 from telebot.async_telebot import AsyncTeleBot
 from telebot.asyncio_storage import StateMemoryStorage
-from telebot.types import Message
+from telebot.types import Message, CallbackQuery
 from telebot.asyncio_handler_backends import State, StatesGroup
 
-from DB import connect_DB, close_connection_DB
-from repositories import validate_number, check_correct_number, get_answer
+from DB import connect_DB
+from repositories import validate_number, check_correct_number, get_answer, add_answer_kb, get_random_quest
 
 config = configparser.ConfigParser()
 config.read("setting.ini")
@@ -24,6 +21,7 @@ class MyStates(StatesGroup):
     number = State()
     bird = State()
     buy = State()
+    put_answer = State()
 
 connection = connect_DB()
 
@@ -32,13 +30,6 @@ async def start(message: Message):
     chat_id = message.chat.id
     request = message.text
     user_id = message.from_user.id
-    btn1 = types.InlineKeyboardButton(text="Старт", callback_data="start")
-    btn2 = types.InlineKeyboardButton(text="Помощь", callback_data="help")
-    btn3 = types.InlineKeyboardButton(text="Квиз", callback_data="give_number")
-    btn4 = types.InlineKeyboardButton(text="Покупки", callback_data="buy")
-    markup = types.ReplyKeyboardMarkup()
-    markup.add(btn1, btn2, btn3, btn4)
-    await bot.send_message(message.chat.id, text="{0.first_name}, ".format(message.from_user),reply_markup=markup)
     markup = types.InlineKeyboardMarkup()
     button1 = types.InlineKeyboardButton("Сайт Хабр", url='https://habr.com/ru/all/')
     button2 = types.InlineKeyboardButton("Наша техническая поддержка", url='https://habr.com/ru/docs/help/rules/')
@@ -81,6 +72,57 @@ async def buy(message: Message):
                            invoice_payload="test-invoice-payload")
 
 
+@bot.message_handler(state=MyStates.bird)
+async def handler_bird(message: Message):
+    chat_id = message.chat.id
+    request = message.text
+    correct_bird = 6
+    if await validate_number(request):
+        await get_answer(request, chat_id, "bird")
+        mes = "Ваш ответ принят: {0}".format(request)
+    else:
+        mes = "Ответ написан с ошибкой. Напишите ответ без пробелов и сторонних символов. Сейчас он выглядит так: {0}".format(request)
+    if await check_correct_number(correct_bird, int(request)):
+        mes = "{0} Вы посчитали правильно!".format(mes)
+    else:
+        mes = "{0} К сожалению, вы ошиблись. Правильный ответ был {1}. За окном было {1} птиц.".format(mes, correct_bird)
+    await bot.send_message(chat_id, mes)
+
+@bot.message_handler(commands=["give_number"])
+async def send_number(message: Message):
+    markup = await add_answer_kb(18,13,6)
+    chat_id = message.chat.id
+    quest = await get_random_quest()
+    await bot.set_state(message.from_user.id, MyStates.put_answer, chat_id)
+    async with bot.retrieve_data(message.from_user.id, chat_id) as data:
+        data['step'] = 1
+        data['answer'] = quest.get('answer')
+        data['quest'] = quest.get('quest')
+        await bot.send_message(chat_id, "Вопрос {0}. {1} ".format(data['step'], data['quest']), reply_markup=markup)
+
+@bot.callback_query_handler(func=None, state=MyStates.put_answer)
+async def button_click_an(query: CallbackQuery):
+    await bot.answer_callback_query(query.id)
+    answer = query.data
+    await bot.set_state(query.from_user.id, MyStates.start)
+    async with bot.retrieve_data(query.from_user.id) as data:
+        print(data)
+        correct = data.get('answer')
+        if answer == correct:
+            data['step'] += 1
+            if data['step'] > 3:
+                await bot.send_message(query.from_user.id, "Вы молодец!")
+            else:
+                quest = await get_random_quest()
+                data['answer'] = quest.get('answer')
+                data['quest'] = quest.get('quest')
+                markup = await add_answer_kb(18, 13, 6) #TODO: берётся из бэка
+                await bot.set_state(query.from_user.id, MyStates.put_answer)
+                await bot.send_message(query.from_user.id, "Вы ответили верно. Вопрос {0}. {1} ".format(data['step'], data['quest']), reply_markup=markup)
+        else:
+            await bot.send_message(query.from_user.id, "Вы проиграли. Вы ответили неверно. Ответом было число {0}".format(correct))
+
+
 @bot.message_handler(state=MyStates.number)
 async def handler_number(message: Message):
     correct_num = 13
@@ -97,38 +139,6 @@ async def handler_number(message: Message):
         mes = "{0} К сожалению, вы ошиблись. Правильный ответ был {1}. У гусеницы {1} ножек.".format(mes,correct_num)
     await bot.set_state(message.from_user.id, MyStates.bird, chat_id)
     await bot.send_message(chat_id, mes)
-
-
-@bot.message_handler(state=MyStates.bird)
-async def handler_bird(message: Message):
-    chat_id = message.chat.id
-    request = message.text
-    correct_bird = 6
-    btn1 = types.InlineKeyboardButton(text="6", callback_data="6")
-    btn2 = types.InlineKeyboardButton(text="8", callback_data="8")
-    btn3 = types.InlineKeyboardButton(text="11", callback_data="11")
-    markup = types.InlineKeyboardMarkup()
-    markup.add(btn1, btn2, btn3)
-    await bot.send_message(chat_id, "Вопрос 2. Сколько птиц пролетело за окном. Введите ваш ответ: ", reply_markup=markup)
-    if await validate_number(request):
-        await get_answer(request, chat_id, "bird")
-        mes = "Ваш ответ принят: {0}".format(request)
-    else:
-        mes = "Ответ написан с ошибкой. Напишите ответ без пробелов и сторонних символов. Сейчас он выглядит так: {0}".format(request)
-    if await check_correct_number(correct_bird, int(request)):
-        mes = "{0} Вы посчитали правильно!".format(mes)
-    else:
-        mes = "{0} К сожалению, вы ошиблись. Правильный ответ был {1}. За окном было {1} птиц.".format(mes, correct_bird)
-    await bot.send_message(chat_id, mes)
-
-@bot.message_handler(commands=["give_number"])
-async def send_number(message: Message):
-    btn1 = types.InlineKeyboardButton(text="10", callback_data="10")
-    btn2 = types.InlineKeyboardButton(text="15", callback_data="15")
-    btn3 = types.InlineKeyboardButton(text="13", callback_data="13")
-    markup = types.InlineKeyboardMarkup()
-    markup.add(btn1, btn2, btn3)
-    chat_id = message.chat.id
-    await bot.set_state(message.from_user.id, MyStates.number, chat_id)
-    await bot.send_message(chat_id, "Вопрос 1. Посчитайте, пожалуйста, сколько ножек у гусениц. "
-                                    "Введите свой ответ: ", reply_markup=markup)
+    markup = await add_answer_kb(105,6,28)
+    await bot.send_message(chat_id, "Вопрос 2. Сколько птиц пролетело за окном. Введите ваш ответ: ",
+                           reply_markup=markup)
