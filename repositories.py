@@ -12,6 +12,15 @@ async def get_random_quest():
         async with session.get(config["Django"]["api_quest"]) as response:
             return await response.json()
 
+async def add_static_kb():
+    a1 = types.InlineKeyboardButton(str("Старт"), callback_data=str("/start"))
+    a2 = types.InlineKeyboardButton(str("Помощь"), callback_data=str("/help"))
+    a3 = types.InlineKeyboardButton(str("Квиз"), callback_data=str("/give_number"))
+    a4 = types.InlineKeyboardButton(str("Купить"), callback_data=str("/buy"))
+    answer_kb = types.ReplyKeyboardMarkup()
+    answer_kb.add(a1,a2,a3,a4)
+    return answer_kb
+
 async def add_answer_kb(a1,a2,a3):
     a1 = types.InlineKeyboardButton(str(a1), callback_data=str(a1))
     a2 = types.InlineKeyboardButton(str(a2), callback_data=str(a2))
