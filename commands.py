@@ -1,4 +1,5 @@
 import configparser
+from random import randint
 
 from telebot import types, asyncio_filters
 from telebot.async_telebot import AsyncTeleBot
@@ -75,25 +76,35 @@ async def send_number(message: Message):
     quest = await get_random_quest()
     await bot.set_state(message.from_user.id, MyStates.put_answer, chat_id)
     async with bot.retrieve_data(message.from_user.id, chat_id) as data:
+        data['black_list'] = []
         data['step'] = 1
+        data['pk'] = quest.get('pk')
         data['answer'] = quest.get('answer')
         data['quest'] = quest.get('quest')
-        markup = await make_answer_kb(int(data['answer']))
+        markup = await make_answer_kb(data['answer'])
         await bot.send_message(chat_id, "Вопрос {0}. {1} ".format(data['step'], data['quest']), reply_markup=markup)
 
 @bot.callback_query_handler(func=None, state=MyStates.put_answer)
 async def button_click_an(query: CallbackQuery):
+    num = 3
     await bot.answer_callback_query(query.id)
     answer = query.data
     await bot.set_state(query.from_user.id, MyStates.start)
     async with bot.retrieve_data(query.from_user.id) as data:
         correct = data.get('answer')
+        black_list = data.get('black_list')
+        black_list.append(data.get('pk'))
         if answer == correct:
             data['step'] += 1
-            if data['step'] > 3:
+            if data['step'] > num:
                 await bot.send_message(query.from_user.id, "Вы молодец!")
             else:
-                quest = await get_random_quest()
+                testt = True
+                while testt:
+                    quest = await get_random_quest()
+                    if quest.get('pk') not in black_list:
+                        testt = False
+                data['pk'] = quest.get('pk')
                 data['answer'] = quest.get('answer')
                 data['quest'] = quest.get('quest')
                 markup = await make_answer_kb(data['answer'])

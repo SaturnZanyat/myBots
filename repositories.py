@@ -1,4 +1,5 @@
 import json
+import random
 import re
 from random import randint
 import aiohttp
@@ -15,11 +16,11 @@ async def get_random_quest():
 async def generate_answer(correct_answer: int):
     black_list = []
     varr = []
-    ff = randint(0,2)
+    ff = random.randint(0,2)
+    black_list.append(correct_answer)
     for f in range(0,3):
         if f == ff:
             varr.append(correct_answer)
-            black_list.append(correct_answer)
         else:
             testt = True
             while testt:
@@ -27,13 +28,11 @@ async def generate_answer(correct_answer: int):
                 if point not in black_list:
                     varr.append(point)
                     black_list.append(point)
-                testt = False
-        print(f)
+                    testt = False
     return varr
 
 async def make_answer_kb(correct_answer):
     varr = await generate_answer(correct_answer)
-    print(varr)
     answer_kb = await add_answer_kb(varr[0],varr[1],varr[2])
     return answer_kb
 
