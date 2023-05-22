@@ -1,6 +1,6 @@
 import json
 import re
-
+from random import randint
 import aiohttp
 from telebot import types
 import configparser
@@ -11,6 +11,31 @@ async def get_random_quest():
     async with aiohttp.ClientSession() as session:
         async with session.get(config["Django"]["api_quest"]) as response:
             return await response.json()
+
+async def generate_answer(correct_answer: int):
+    black_list = []
+    varr = []
+    ff = randint(0,2)
+    for f in range(0,3):
+        if f == ff:
+            varr.append(correct_answer)
+            black_list.append(correct_answer)
+        else:
+            testt = True
+            while testt:
+                point = int(randint(1,20))
+                if point not in black_list:
+                    varr.append(point)
+                    black_list.append(point)
+                testt = False
+        print(f)
+    return varr
+
+async def make_answer_kb(correct_answer):
+    varr = await generate_answer(correct_answer)
+    print(varr)
+    answer_kb = await add_answer_kb(varr[0],varr[1],varr[2])
+    return answer_kb
 
 async def add_static_kb():
     a1 = types.InlineKeyboardButton(str("Старт"), callback_data=str("/start"))

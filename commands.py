@@ -8,7 +8,7 @@ from telebot.asyncio_handler_backends import State, StatesGroup
 
 from DB import connect_DB
 from repositories import validate_number, check_correct_number, get_answer, add_answer_kb, get_random_quest, \
-    add_static_kb
+    add_static_kb, make_answer_kb
 
 config = configparser.ConfigParser()
 config.read("setting.ini")
@@ -71,7 +71,6 @@ async def buy(message: Message):
 
 @bot.message_handler(commands=["give_number"])
 async def send_number(message: Message):
-    markup = await add_answer_kb(18,13,6)
     chat_id = message.chat.id
     quest = await get_random_quest()
     await bot.set_state(message.from_user.id, MyStates.put_answer, chat_id)
@@ -79,6 +78,7 @@ async def send_number(message: Message):
         data['step'] = 1
         data['answer'] = quest.get('answer')
         data['quest'] = quest.get('quest')
+        markup = await make_answer_kb(int(data['answer']))
         await bot.send_message(chat_id, "Вопрос {0}. {1} ".format(data['step'], data['quest']), reply_markup=markup)
 
 @bot.callback_query_handler(func=None, state=MyStates.put_answer)
@@ -96,7 +96,7 @@ async def button_click_an(query: CallbackQuery):
                 quest = await get_random_quest()
                 data['answer'] = quest.get('answer')
                 data['quest'] = quest.get('quest')
-                markup = await add_answer_kb(18, 13, 6) #TODO: берётся из бэка
+                markup = await make_answer_kb(data['answer'])
                 await bot.set_state(query.from_user.id, MyStates.put_answer)
                 await bot.send_message(query.from_user.id, "Вы ответили верно. Вопрос {0}. {1} ".format(data['step'], data['quest']), reply_markup=markup)
         else:
