@@ -37,10 +37,10 @@ async def make_answer_kb(correct_answer):
     return answer_kb
 
 async def add_static_kb():
-    a1 = types.InlineKeyboardButton(str("Старт"), callback_data=str("/start"))
-    a2 = types.InlineKeyboardButton(str("Помощь"), callback_data=str("/help"))
-    a3 = types.InlineKeyboardButton(str("Квиз"), callback_data=str("/give_number"))
-    a4 = types.InlineKeyboardButton(str("Купить"), callback_data=str("/buy"))
+    a1 = types.KeyboardButton("Старт")
+    a2 = types.KeyboardButton("Помощь")
+    a3 = types.KeyboardButton("Квиз")
+    a4 = types.KeyboardButton("Купить")
     answer_kb = types.ReplyKeyboardMarkup()
     answer_kb.add(a1,a2,a3,a4)
     return answer_kb

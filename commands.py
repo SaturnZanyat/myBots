@@ -28,34 +28,41 @@ class MyStates(StatesGroup):
 connection = connect_DB()
 
 
-@bot.message_handler(commands=["start", "help"])
+@bot.message_handler(commands=["start", "help", "Старт", "Помощь"])
 async def start(message: Message):
     chat_id = message.chat.id
     request = message.text
     user_id = message.from_user.id
     # kb = await add_static_kb()
     markup = types.InlineKeyboardMarkup()
+    markupKB = await add_static_kb()
     button1 = types.InlineKeyboardButton("Сайт Хабр", url='https://habr.com/ru/all/')
     button2 = types.InlineKeyboardButton("Наша техническая поддержка", url='https://habr.com/ru/docs/help/rules/')
-    if request == '/start':
+    if request == '/start' or request == 'Старт':
         markup.add(button1)
         await bot.send_message(message.chat.id,
                          "Этот бот представляет компанию "
                          "*Здесь могло бы быть имя вашей компании*",
                          reply_markup=markup)
-    elif request == '/help':
+        await bot.send_message(message.chat.id,
+                               "Бот ожидает команду",
+                               reply_markup=markupKB)
+    elif request == '/help' or request == 'Помощь':
         markup.add(button2)
         await bot.send_message(message.chat.id,
                                "Бот обладает ограниченным функционалом. Вы можете ознакомиться с help-страницей"
                                "на сайте",
                                reply_markup=markup)
+        await bot.send_message(message.chat.id,
+                               "Бот ожидает команду",
+                               reply_markup=markupKB)
     else:
         await bot.send_message(message.chat.id,
                                "Бот вас не понял")
     await bot.set_state(user_id, MyStates.start, chat_id)
 
 
-@bot.message_handler(commands=["buy"])
+@bot.message_handler(commands=["buy", "Купить"])
 async def buy(message: Message):
     if payment_token.split(':')[1] == 'TEST':
         await bot.send_message(message.chat.id, "Тестовый платеж!!!")
@@ -69,8 +76,12 @@ async def buy(message: Message):
                            prices=[PRICE],
                            start_parameter="buy_zvezda",
                            invoice_payload="test-invoice-payload")
+    markupKB = await add_static_kb()
+    await bot.send_message(message.chat.id,
+                           "Бот ожидает команду",
+                           reply_markup=markupKB)
 
-@bot.message_handler(commands=["give_number"])
+@bot.message_handler(commands=["give_number", "Квиз"])
 async def send_number(message: Message):
     chat_id = message.chat.id
     quest = await get_random_quest()
@@ -98,6 +109,10 @@ async def button_click_an(query: CallbackQuery):
             data['step'] += 1
             if data['step'] > num:
                 await bot.send_message(query.from_user.id, "Вы молодец!")
+                markupKB = await add_static_kb()
+                await bot.send_message(query.from_user.id,
+                                       "Бот ожидает команду",
+                                       reply_markup=markupKB)
             else:
                 testt = True
                 while testt:
@@ -112,3 +127,18 @@ async def button_click_an(query: CallbackQuery):
                 await bot.send_message(query.from_user.id, "Вы ответили верно. Вопрос {0}. {1} ".format(data['step'], data['quest']), reply_markup=markup)
         else:
             await bot.send_message(query.from_user.id, "Вы проиграли. Вы ответили неверно. Ответом было число {0}".format(correct))
+            markupKB = await add_static_kb()
+            await bot.send_message(query.from_user.id,
+                                   "Бот ожидает команду",
+                                   reply_markup=markupKB)
+
+@bot.message_handler(func=lambda message: True)
+async def handle_message(message):
+    if message.text == 'Старт':
+        await start(message)
+    elif message.text == 'Помощь':
+        await start(message)
+    elif message.text == 'Квиз':
+        await send_number(message)
+    elif message.text == 'Купить':
+        await buy(message)

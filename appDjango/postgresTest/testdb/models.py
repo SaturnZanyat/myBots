@@ -5,5 +5,5 @@ class question(models.Model):
     answer = models.CharField(verbose_name="Ответ", max_length=50)
 
     def str(self):
-        return self.title
+        return self.quest
 
